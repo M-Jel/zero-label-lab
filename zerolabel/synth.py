@@ -2,13 +2,16 @@
 
 Usage:
     python -m zerolabel.synth --out data/synth/demo --seed 0
+    python -m zerolabel.synth --out data/synth/level3 --contrast 0.2 --n 40 --rmin 2 --rmax 8
 """
 import argparse
 import json
 import math
+import subprocess
 from pathlib import Path
 
 import cv2
+import imageio_ffmpeg
 import numpy as np
 
 SHIFT = 4            # sub-pixel drawing: coordinates are multiplied by 2**SHIFT
@@ -80,6 +83,13 @@ def merge(drops, next_id, frame, events):
         next_id += 1
 
 
+def to_h264(src, dst):
+    """Re-encode to H.264 so browsers (and the Meta playground) can play it."""
+    exe = imageio_ffmpeg.get_ffmpeg_exe()
+    subprocess.run([exe, "-y", "-loglevel", "error", "-i", str(src),
+                    "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", str(dst)], check=True)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", default="data/synth/demo")
@@ -95,8 +105,12 @@ def main():
     ap.add_argument("--jitter", type=float, default=0.3, help="random push per frame (px/frame)")
     ap.add_argument("--noise", type=float, default=8.0, help="Gaussian noise (grey levels)")
     ap.add_argument("--blur", type=float, default=1.0, help="Gaussian blur sigma (px), 0 = none")
+    ap.add_argument("--contrast", type=float, default=1.0,
+                    help="drop opacity, 1 = opaque, 0.15 = nearly transparent")
     ap.add_argument("--no-merge", action="store_true")
     a = ap.parse_args()
+    if not 0 < a.contrast <= 1:
+        raise SystemExit("--contrast must be in (0, 1]")
 
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -106,7 +120,8 @@ def main():
     drops = place_drops(rng, a)
     next_id = len(drops)
     bg = background(a.height, a.width)
-    writer = cv2.VideoWriter(str(out / "video.mp4"), cv2.VideoWriter_fourcc(*"mp4v"),
+    raw_path = out / "raw_mp4v.mp4"
+    writer = cv2.VideoWriter(str(raw_path), cv2.VideoWriter_fourcc(*"mp4v"),
                              a.fps, (a.width, a.height))
     if not writer.isOpened():
         raise SystemExit("Could not open the video writer")
@@ -118,8 +133,10 @@ def main():
             if not a.no_merge:
                 next_id = merge(drops, next_id, f, events)
         img = bg.copy()
+        layer = img.copy()
         for d in drops:
-            draw_drop(img, d["x"], d["y"], d["r"])
+            draw_drop(layer, d["x"], d["y"], d["r"])
+        img = layer if a.contrast >= 1 else cv2.addWeighted(layer, a.contrast, img, 1 - a.contrast, 0)
         if a.blur > 0:
             img = cv2.GaussianBlur(img, (0, 0), a.blur)
         if a.noise > 0:
@@ -131,6 +148,8 @@ def main():
                                  round(d["x"] + d["r"], 2), round(d["y"] + d["r"], 2)]}
                        for d in drops])
     writer.release()
+    to_h264(raw_path, out / "video.mp4")
+    raw_path.unlink()
 
     truth = {"params": vars(a), "units": "pixels and frames", "frames": frames, "events": events}
     (out / "truth.json").write_text(json.dumps(truth, indent=1), encoding="utf-8")
