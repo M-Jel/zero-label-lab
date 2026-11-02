@@ -1,4 +1,5 @@
-"""Convertit la reponse brute de SAM 3.1 (jsonl) en detections par image."""
+"""Convertit la reponse brute de SAM 3.1 (jsonl) en detections par image.
+SAM n'envoie rien pour les images sans detection : on les complete par des listes vides."""
 import argparse
 import json
 import re
@@ -21,7 +22,7 @@ def _det(m: re.Match) -> dict:
     }
 
 
-def parse_file(path: Path) -> list[list[dict]]:
+def parse_file(path: Path, n_expected: int = 0) -> tuple[list[list[dict]], int]:
     frames: dict[int, list[dict]] = {}
     for line in open(path, encoding="utf-8"):
         e = json.loads(line)
@@ -32,17 +33,18 @@ def parse_file(path: Path) -> list[list[dict]]:
         if not m:
             raise ValueError(f"delta sans numero d'image : {delta[:40]!r}")
         frames[int(m.group(1))] = [_det(b) for b in BOX_RE.finditer(delta)]
-    n = max(frames) + 1 if frames else 0
-    return [frames.get(i, []) for i in range(n)]
+    n = max(max(frames) + 1 if frames else 0, n_expected)
+    return [frames.get(i, []) for i in range(n)], len(frames)
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--raw", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--frames", type=int, default=150, help="nombre d'images de la video")
     a = ap.parse_args()
 
-    frames = parse_file(Path(a.raw))
+    frames, n_received = parse_file(Path(a.raw), a.frames)
     out = Path(a.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps({"source": a.raw, "frames": frames}), encoding="utf-8")
@@ -53,8 +55,8 @@ def main() -> None:
         for d in f:
             confs.setdefault(d["id"], set()).add(round(d["conf"], 6))
     const = all(len(v) == 1 for v in confs.values())
-    print(f"{len(frames)} images | debut: {len(frames[0])} | fin: {len(frames[-1])} "
-          f"| ids distincts: {len(ids)} | confiance constante par objet: {const}")
+    print(f"{len(frames)} images ({n_received} avec detections) | debut: {len(frames[0])} "
+          f"| fin: {len(frames[-1])} | ids distincts: {len(ids)} | confiance constante: {const}")
 
 
 if __name__ == "__main__":
