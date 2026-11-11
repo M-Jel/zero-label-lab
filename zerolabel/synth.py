@@ -90,7 +90,7 @@ def to_h264(src, dst):
                     "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", str(dst)], check=True)
 
 
-def main():
+def build_parser():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", default="data/synth/demo")
     ap.add_argument("--seed", type=int, default=0)
@@ -108,7 +108,32 @@ def main():
     ap.add_argument("--contrast", type=float, default=1.0,
                     help="drop opacity, 1 = opaque, 0.15 = nearly transparent")
     ap.add_argument("--no-merge", action="store_true")
-    a = ap.parse_args()
+    return ap
+
+
+# The five difficulty levels used in the benchmark (the other parameters keep their defaults).
+LEVELS = {
+    1: dict(n=12, rmin=6.0, rmax=20.0, noise=10.0, blur=1.0, contrast=0.5),
+    2: dict(n=25, rmin=3.0, rmax=10.0, noise=12.0, blur=1.0, contrast=0.3),
+    3: dict(n=40, rmin=2.0, rmax=8.0, noise=15.0, blur=1.5, contrast=0.2),
+    4: dict(n=35, rmin=2.0, rmax=7.0, noise=15.0, blur=1.5, contrast=0.15),
+    5: dict(n=60, rmin=2.0, rmax=6.0, noise=18.0, blur=2.0, contrast=0.12),
+}
+
+
+def make_level(out, level: int, seed: int = 0, quiet: bool = False) -> None:
+    """Generate one benchmark video for a difficulty level and a seed."""
+    a = build_parser().parse_args(["--out", str(out), "--seed", str(seed)])
+    for k, v in LEVELS[level].items():
+        setattr(a, k, v)
+    generate(a, quiet)
+
+
+def main():
+    generate(build_parser().parse_args())
+
+
+def generate(a, quiet: bool = False):
     if not 0 < a.contrast <= 1:
         raise SystemExit("--contrast must be in (0, 1]")
 
@@ -153,8 +178,9 @@ def main():
 
     truth = {"params": vars(a), "units": "pixels and frames", "frames": frames, "events": events}
     (out / "truth.json").write_text(json.dumps(truth, indent=1), encoding="utf-8")
-    print(f"{a.frames} frames, {len(frames[0])} drops at start, {len(events)} merges, "
-          f"{len(frames[-1])} drops at the end -> {out}")
+    if not quiet:
+        print(f"{a.frames} frames, {len(frames[0])} drops at start, {len(events)} merges, "
+              f"{len(frames[-1])} drops at the end -> {out}")
 
 
 if __name__ == "__main__":

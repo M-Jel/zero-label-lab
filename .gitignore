@@ -227,3 +227,4 @@ outputs/
 *.mp4
 *.avi
 *.pt
+.venv-*/

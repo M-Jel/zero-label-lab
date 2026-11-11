@@ -1,0 +1,10 @@
+# Training / evaluation of the small report-writing LLM (Phase 4).
+# Needs Python 3.11 or 3.12: under Python 3.15, PyYAML has no wheel and needs a C++ compiler (checked 2026-11-11).
+# CPU wheel of torch: pip install torch==2.15.0 --index-url https://download.pytorch.org/whl/cpu
+-r requirements.txt
+torch==2.15.0
+transformers==5.22.2
+peft==0.21.2
+trl==1.17.1
+datasets==5.2.0
+accelerate==1.15.0
