@@ -9,18 +9,19 @@ Legend: `[x]` done, `[ ]` to do, `⛔` needs the owner's explicit OK (paid Meta 
   - Result: dry-run resolves, but the real install fails under 3.15 (PyYAML builds from source, needs MSVC). `.venv-train` uses Python 3.12.10 with torch 2.15.0+cpu, transformers 5.22.2, peft 0.21.2, trl 1.17.1 (`requirements-train.txt`).
 - [x] 0.4 `pytest` tests (no API call): `sam_parse`, `evaluate.match/score`, `report_agent.check`, `measure`
 - [x] 0.5 Single reproducible entry point `python -m zerolabel.reproduce` that rebuilds every result from cached files (never calls the API)
-- [ ] 0.6 Push phase 0
+- [x] 0.6 Push phase 0
 
 ## Phase 1 — report agent
-- [ ] 1.1 Style rules in the prompt (plain sentences, no raw field names, 2 decimals, no number outside the measurements, size-bias sentence on WARNING)
-- [ ] 1.2 Stronger verifier: raw field names, glued words (e.g. `withoutdetection`), mandatory size-bias sentence when WARNING; tests
+- [x] 1.1 Style rules in the prompt (plain sentences, no raw field names, 2 decimals, no number outside the measurements, size-bias sentence on WARNING)
+- [x] 1.2 Stronger verifier: raw field names, glued words (e.g. `withoutdetection`), mandatory size-bias sentence when WARNING; tests
 - [ ] 1.3 ⛔ Re-run Spark on the 5 levels (command + cost estimate, wait for OK)
 - [ ] 1.4 Push phase 1
 
 ## Phase 2 — solid evaluation
-- [ ] 2.1 Recall per radius bin from ground truth (SAM and OpenCV) + figure
-- [ ] 2.2 Matching-threshold sensitivity (4, 8, 12 px)
-- [ ] 2.3 Failure gallery: frames with missed drops highlighted
+- [x] 2.1 Recall per radius bin from ground truth (SAM and OpenCV) + figure
+  - Seed 0: SAM recall 0.0 below 4 px, 0.036 at 4–6 px, 0.781 at 8–12 px; the bias also holds inside a single level (level 2: 0.064 at 4–6 px vs 0.927 at 6–8 px), so it is not only a contrast effect.
+- [x] 2.2 Matching-threshold sensitivity (4, 8, 12 px)
+- [x] 2.3 Failure gallery: frames with missed drops highlighted
 - [ ] 2.4 Generate 5 levels × 4 seeds locally, run OpenCV on all of them
 - [ ] 2.5 ⛔ SAM on the new videos (cost estimate, cache every raw response, never pay twice)
 - [ ] 2.6 Correlation estimated coverage vs true recall (Pearson, Spearman, bootstrap CI) + figure
