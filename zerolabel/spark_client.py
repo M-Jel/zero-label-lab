@@ -1,4 +1,6 @@
-"""Appel a Muse Spark via la Meta Model API (Responses, streaming)."""
+"""Call Muse Spark through the Meta Model API (Responses, streaming).
+
+WARNING: every call is billed by Meta. Its outputs are used for evaluation only, never to train a model."""
 import argparse
 import json
 import os
@@ -14,11 +16,11 @@ MODEL = "muse-spark-1.3"
 def ask(prompt: str, system: str | None = None, effort: str = "low", max_tokens: int = 4000,
         temperature: float = 0.0, model: str = MODEL,
         raw_path: str = "outputs/spark_raw/last.jsonl") -> dict:
-    """Renvoie {"text", "usage", "complete"}. Garde les evenements bruts pour le debogage."""
+    """Return {"text", "usage", "complete"}. Keeps the raw events for debugging."""
     load_dotenv()
     key = os.environ.get("MODEL_API_KEY")
     if not key:
-        raise SystemExit("MODEL_API_KEY absente : verifie le fichier .env")
+        raise SystemExit("MODEL_API_KEY is missing: check the .env file")
     payload = {
         "model": model,
         "input": [{"type": "message", "role": "user",
@@ -39,7 +41,7 @@ def ask(prompt: str, system: str | None = None, effort: str = "low", max_tokens:
                        json=payload, stream=True, timeout=600) as r, \
             open(raw, "w", encoding="utf-8") as out:
         if r.status_code >= 400:
-            raise SystemExit(f"Erreur {r.status_code} : {r.text[:800]}")
+            raise SystemExit(f"Error {r.status_code}: {r.text[:800]}")
         try:
             for line in r.iter_lines():
                 if not line.startswith(b"data: "):
@@ -58,7 +60,7 @@ def ask(prompt: str, system: str | None = None, effort: str = "low", max_tokens:
                     complete = True
                     usage = e.get("response", {}).get("usage")
         except (requests.exceptions.ChunkedEncodingError, requests.exceptions.ConnectionError) as err:
-            print(f"connexion coupee ({err.__class__.__name__})")
+            print(f"connection dropped ({err.__class__.__name__})")
     return {"text": "".join(parts), "usage": usage, "complete": complete}
 
 
@@ -72,7 +74,7 @@ def main() -> None:
     res = ask(a.prompt, a.system, a.effort, a.max_tokens)
     print(res["text"])
     print("---")
-    print("complet:", res["complete"], "| usage:", json.dumps(res["usage"]))
+    print("complete:", res["complete"], "| usage:", json.dumps(res["usage"]))
 
 
 if __name__ == "__main__":

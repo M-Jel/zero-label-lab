@@ -1,5 +1,5 @@
-"""Mesures sans annotation a partir des pistes SAM, plus un garde-fou OpenCV
-qui signale les gouttes probablement ratees par SAM. N'utilise jamais la verite."""
+"""Annotation-free measurements from SAM tracks, plus an OpenCV guard that flags
+drops SAM probably missed. Never uses the ground truth."""
 import argparse
 import json
 from pathlib import Path
@@ -62,9 +62,9 @@ def main():
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     Path(a.out).write_text(json.dumps(m, indent=1), encoding="utf-8")
     g = m["guard"]
-    print(f"gouttes debut/fin: {m['count_first']}/{m['count_last']} | rayon median: "
-          f"{m['radius_px']['median']} px | couverture estimee: {g['estimated_coverage']} "
-          f"| images signalees: {g['flagged_fraction']}")
+    print(f"drops start/end: {m['count_first']}/{m['count_last']} | median radius: "
+          f"{m['radius_px']['median']} px | estimated coverage: {g['estimated_coverage']} "
+          f"| flagged frames: {g['flagged_fraction']}")
 
 
 if __name__ == "__main__":

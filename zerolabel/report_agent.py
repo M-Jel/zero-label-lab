@@ -1,5 +1,5 @@
-"""Agent rapport : Muse Spark redige un rapport a partir des mesures, un verificateur
-controle chaque nombre, et Spark corrige si besoin (2 corrections au maximum)."""
+"""Report agent: Muse Spark writes a report from the measurements, a deterministic verifier
+checks every number, and Spark fixes the report if needed (at most 2 corrections)."""
 import argparse
 import json
 import re
@@ -8,7 +8,7 @@ from pathlib import Path
 from zerolabel.spark_client import ask
 
 COVERAGE_MIN = 0.8
-PRICE_IN, PRICE_OUT = 1.25, 4.25  # $ par million de tokens (page Models)
+PRICE_IN, PRICE_OUT = 1.25, 4.25  # $ per million tokens (Meta "Models" page)
 
 SYSTEM = f"""You are a lab assistant writing a short measurement report for a scientist.
 Rules:
@@ -70,7 +70,7 @@ def run(measures_path: str, out_dir: str, max_fix: int = 2) -> dict:
         tout += u.get("output_tokens", 0)
         issues = check(res["text"], m)
         log.append({"attempt": attempt, "issues": issues, "complete": res["complete"]})
-        print(f"essai {attempt} : {len(issues)} probleme(s)")
+        print(f"attempt {attempt}: {len(issues)} issue(s)")
         if not issues:
             break
         prompt = (f"Measurements (JSON):\n{data}\n\nYour previous report:\n{res['text']}\n\n"
@@ -94,7 +94,7 @@ def main():
     a = ap.parse_args()
     s = run(a.measures, a.out)
     print(f"{s['status']} | tokens {s['input_tokens']} in / {s['output_tokens']} out "
-          f"| cout estime {s['est_cost_usd']} $ -> {a.out}/report.md")
+          f"| estimated cost {s['est_cost_usd']} $ -> {a.out}/report.md")
 
 
 if __name__ == "__main__":

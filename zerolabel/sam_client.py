@@ -1,6 +1,8 @@
-"""Appel a SAM 3.1 via la Meta Model API, avec nouvelles tentatives si la connexion est coupee.
-Sauvegarde la reponse brute (une ligne JSON par evenement) dans <out>/<prompt>.jsonl.
-Note : SAM n'envoie aucun evenement pour les images sans detection."""
+"""Call SAM 3.1 through the Meta Model API, retrying when the connection drops.
+Saves the raw response (one JSON line per event) to <out>/<prompt>.jsonl.
+Note: SAM sends no event for frames without any detection.
+
+WARNING: every call is billed by Meta. Raw responses are cached; never call twice for the same video."""
 import argparse
 import json
 import os
@@ -29,13 +31,13 @@ def upload(video_path: Path, key: str) -> str:
     r.raise_for_status()
     file_id = r.json().get("id")
     if not isinstance(file_id, str) or not file_id:
-        raise RuntimeError("Upload termine sans id de fichier.")
+        raise RuntimeError("Upload finished without a file id.")
     return file_id
 
 
 def segment_once(file_id: str, prompt: str, key: str, out_path: Path,
                  mask_encoding: str) -> tuple[int, bool]:
-    """Un appel. Renvoie (nombre d'images avec detections, reponse complete ?)."""
+    """One call. Returns (number of frames with detections, response complete?)."""
     payload = {
         "model": "sam-3.1",
         "input": [{
@@ -82,31 +84,31 @@ def segment_once(file_id: str, prompt: str, key: str, out_path: Path,
                     elif etype == "response.completed":
                         complete = True
         except NET_ERRORS as e:
-            print(f"  connexion coupee apres {frames} images ({e.__class__.__name__})")
+            print(f"  connection dropped after {frames} frames ({e.__class__.__name__})")
     return frames, complete
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--video", help="video a envoyer (ignoree si --file-id est donne)")
-    ap.add_argument("--file-id", help="reutiliser un fichier deja envoye")
+    ap.add_argument("--video", help="video to upload (ignored when --file-id is given)")
+    ap.add_argument("--file-id", help="reuse a file already uploaded")
     ap.add_argument("--prompt", default="circle")
     ap.add_argument("--mask-encoding", default="lossless")
-    ap.add_argument("--retries", type=int, default=3, help="nombre maximal d'essais")
+    ap.add_argument("--retries", type=int, default=3, help="maximum number of attempts")
     ap.add_argument("--out", default="outputs/sam_raw")
     args = ap.parse_args()
 
     load_dotenv()
     key = os.environ.get("MODEL_API_KEY")
     if not key:
-        raise SystemExit("MODEL_API_KEY absente : verifie le fichier .env")
+        raise SystemExit("MODEL_API_KEY is missing: check the .env file")
 
     if args.file_id:
         file_id = args.file_id
     elif args.video:
         file_id = upload(Path(args.video), key)
     else:
-        raise SystemExit("Donne --video ou --file-id")
+        raise SystemExit("Give --video or --file-id")
     print(f"file_id : {file_id}")
 
     out_dir = Path(args.out)
@@ -114,8 +116,8 @@ def main() -> None:
     final = out_dir / f"{args.prompt.replace(' ', '_')}.jsonl"
     best_frames, best_tmp, best_complete = -1, None, False
     for attempt in range(1, args.retries + 1):
-        tmp = out_dir / f"_essai{attempt}.jsonl"
-        print(f"essai {attempt}/{args.retries}...")
+        tmp = out_dir / f"_attempt{attempt}.jsonl"
+        print(f"attempt {attempt}/{args.retries}...")
         frames, complete = segment_once(file_id, args.prompt, key, tmp, args.mask_encoding)
         if frames > best_frames or (complete and frames == best_frames):
             best_frames, best_tmp, best_complete = frames, tmp, complete
@@ -125,10 +127,10 @@ def main() -> None:
             time.sleep(5)
 
     shutil.copyfile(best_tmp, final)
-    for t in out_dir.glob("_essai*.jsonl"):
+    for t in out_dir.glob("_attempt*.jsonl"):
         t.unlink()
-    status = "reponse complete" if best_complete else "INCOMPLET (connexion coupee)"
-    print(f"{best_frames} images avec detections -> {final} ({status})")
+    status = "complete response" if best_complete else "INCOMPLETE (connection dropped)"
+    print(f"{best_frames} frames with detections -> {final} ({status})")
 
 
 if __name__ == "__main__":

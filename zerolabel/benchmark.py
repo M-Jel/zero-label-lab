@@ -1,4 +1,4 @@
-"""Tableau comparatif SAM 3.1 vs OpenCV sur tous les niveaux de difficulte."""
+"""Comparison table SAM 3.1 vs OpenCV on every difficulty level."""
 import argparse
 import json
 from pathlib import Path
@@ -27,7 +27,7 @@ def main() -> None:
         for method, pattern in METHODS.items():
             p = Path(pattern.format(l=l))
             if not p.exists():
-                print(f"absent : {p}")
+                print(f"missing: {p}")
                 continue
             s = score(truth, json.load(open(p, encoding="utf-8"))["frames"])
             rows.append({"level": l, "visibility": VISIBILITY.get(l, "?"), "method": method, **s})

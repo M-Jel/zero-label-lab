@@ -1,5 +1,5 @@
-"""Convertit la reponse brute de SAM 3.1 (jsonl) en detections par image.
-SAM n'envoie rien pour les images sans detection : on les complete par des listes vides."""
+"""Convert the raw SAM 3.1 response (jsonl) into detections per frame.
+SAM sends nothing for frames without detection: they are filled with empty lists."""
 import argparse
 import json
 import re
@@ -31,7 +31,7 @@ def parse_file(path: Path, n_expected: int = 0) -> tuple[list[list[dict]], int]:
         delta = e["delta"]
         m = FRAME_RE.match(delta)
         if not m:
-            raise ValueError(f"delta sans numero d'image : {delta[:40]!r}")
+            raise ValueError(f"delta without a frame number: {delta[:40]!r}")
         frames[int(m.group(1))] = [_det(b) for b in BOX_RE.finditer(delta)]
     n = max(max(frames) + 1 if frames else 0, n_expected)
     return [frames.get(i, []) for i in range(n)], len(frames)
@@ -41,7 +41,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--raw", required=True)
     ap.add_argument("--out", required=True)
-    ap.add_argument("--frames", type=int, default=150, help="nombre d'images de la video")
+    ap.add_argument("--frames", type=int, default=150, help="number of frames in the video")
     a = ap.parse_args()
 
     frames, n_received = parse_file(Path(a.raw), a.frames)
@@ -55,8 +55,8 @@ def main() -> None:
         for d in f:
             confs.setdefault(d["id"], set()).add(round(d["conf"], 6))
     const = all(len(v) == 1 for v in confs.values())
-    print(f"{len(frames)} images ({n_received} avec detections) | debut: {len(frames[0])} "
-          f"| fin: {len(frames[-1])} | ids distincts: {len(ids)} | confiance constante: {const}")
+    print(f"{len(frames)} frames ({n_received} with detections) | start: {len(frames[0])} "
+          f"| end: {len(frames[-1])} | distinct ids: {len(ids)} | constant confidence: {const}")
 
 
 if __name__ == "__main__":

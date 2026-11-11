@@ -1,4 +1,4 @@
-"""Compare des detections (SAM ou OpenCV) a la verite synthetique."""
+"""Score detections (SAM or OpenCV) against the synthetic ground truth."""
 import argparse
 import json
 
@@ -87,16 +87,16 @@ def main() -> None:
     truth = json.load(open(a.truth, encoding="utf-8"))
     pred = json.load(open(a.pred, encoding="utf-8"))["frames"]
     s = score(truth, pred, a.max_dist)
-    print(f"images: {s['frames']}")
-    print(f"rappel: {s['recall']:.3f} | precision: {s['precision']:.3f} "
+    print(f"frames: {s['frames']}")
+    print(f"recall: {s['recall']:.3f} | precision: {s['precision']:.3f} "
           f"(TP={s['tp']}, FN={s['fn']}, FP={s['fp']})")
     if s["center_err_mean"] is not None:
-        print(f"erreur centre: moyenne {s['center_err_mean']:.2f} px, max {s['center_err_max']:.2f} px")
-        print(f"erreur rayon (pred - verite): biais {s['radius_bias']:+.2f} px, "
-              f"erreur absolue {s['radius_abs_err']:.2f} px")
-    print(f"changements d'identite: {s['id_switches']} | ids predits: {s['pred_ids']} "
-          f"| ids vrais: {s['true_ids']}")
-    print(f"fusions coherentes: {s['merges_ok']}/{s['merges_checked']} (sur {s['merges_total']} fusions)")
+        print(f"centre error: mean {s['center_err_mean']:.2f} px, max {s['center_err_max']:.2f} px")
+        print(f"radius error (pred - truth): bias {s['radius_bias']:+.2f} px, "
+              f"absolute error {s['radius_abs_err']:.2f} px")
+    print(f"id switches: {s['id_switches']} | predicted ids: {s['pred_ids']} "
+          f"| true ids: {s['true_ids']}")
+    print(f"consistent merges: {s['merges_ok']}/{s['merges_checked']} (out of {s['merges_total']} merges)")
 
 
 if __name__ == "__main__":
