@@ -61,3 +61,9 @@ def test_previous_spark_reports_now_fail():
     m["guard"].update(cv_unmatched_per_frame=1.22, flagged_frames=15, flagged_fraction=0.1)
     issues = check(old, m)
     assert any("unmatched per frame" in i for i in issues) and any("flag min" in i for i in issues)
+
+
+def test_percentile_levels_are_allowed():
+    m = measures(0.443)
+    m["guard"]["flagged_fraction"] = 1.0
+    assert not any("10%" in i for i in check("10% of drops were smaller than 7.08 pixels.", m))

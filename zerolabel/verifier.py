@@ -9,12 +9,14 @@ It checks that a written report
   6. has no glued words such as 'withoutdetection'.
 
 Known limits: it does not understand the meaning of the sentences (a correct number can be
-attached to the wrong quantity), and it accepts rounded values (0.44 for 0.443).
+attached to the wrong quantity, e.g. "10% of drops" can match any field equal to 0.1), and it
+accepts rounded values (0.44 for 0.443).
 """
 import re
 
 COVERAGE_MIN = 0.8
 MAX_DECIMALS = 2
+PERCENTILE_LEVELS = [0.1, 0.9]  # as fractions, so "10%" and "90%" are accepted
 SIZE_BIAS_SENTENCE = ("On our synthetic benchmark, the drops that SAM missed were mostly the small ones, "
                       "so the size statistics are probably biased toward larger drops.")
 
@@ -60,7 +62,8 @@ def needs_warning(m: dict) -> bool:
 
 def invented_numbers(text: str, m: dict) -> list[str]:
     """Numbers in the text that do not match any value of the measurements."""
-    values = list(numbers(m)) + [COVERAGE_MIN]
+    # 10% / 90% are allowed because the prompt explains the p10 / p90 percentiles with them
+    values = list(numbers(m)) + [COVERAGE_MIN] + PERCENTILE_LEVELS
     bad = []
     for tok in NUM_RE.findall(text.replace("SAM 3.1", "SAM")):
         pct = tok.endswith("%")

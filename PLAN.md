@@ -14,8 +14,9 @@ Legend: `[x]` done, `[ ]` to do, `⛔` needs the owner's explicit OK (paid Meta 
 ## Phase 1 — report agent
 - [x] 1.1 Style rules in the prompt (plain sentences, no raw field names, 2 decimals, no number outside the measurements, size-bias sentence on WARNING)
 - [x] 1.2 Stronger verifier: raw field names, glued words (e.g. `withoutdetection`), mandatory size-bias sentence when WARNING; tests
-- [ ] 1.3 ⛔ Re-run Spark on the 5 levels (command + cost estimate, wait for OK)
-- [ ] 1.4 Push phase 1
+- [x] 1.3 ⛔ Re-run Spark on the 5 levels (approved 2026-11-11)
+  - 5/5 VERIFIED (4 at the first attempt, level 4 after 1 fix), estimated cost 0.065 $ in total (`outputs/reports_v2/summary.json`). Found a verifier limit: '10% of drops' (p10) passed at level 1 only because flagged_fraction = 0.1; percentile levels 10/90 are now explicitly allowed.
+- [x] 1.4 Push phase 1
 
 ## Phase 2 — solid evaluation
 - [x] 2.1 Recall per radius bin from ground truth (SAM and OpenCV) + figure
