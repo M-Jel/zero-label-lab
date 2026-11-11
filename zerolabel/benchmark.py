@@ -20,9 +20,12 @@ def main() -> None:
     ap.add_argument("--out-json", default="outputs/benchmark.json")
     ap.add_argument("--out-md", default="outputs/benchmark.md")
     a = ap.parse_args()
+    main_rows(a.levels, a.out_json, a.out_md)
 
+
+def main_rows(levels, out_json="outputs/benchmark.json", out_md="outputs/benchmark.md") -> list[dict]:
     rows = []
-    for l in a.levels:
+    for l in levels:
         truth = json.load(open(f"data/synth/level{l}/truth.json", encoding="utf-8"))
         for method, pattern in METHODS.items():
             p = Path(pattern.format(l=l))
@@ -32,8 +35,8 @@ def main() -> None:
             s = score(truth, json.load(open(p, encoding="utf-8"))["frames"])
             rows.append({"level": l, "visibility": VISIBILITY.get(l, "?"), "method": method, **s})
 
-    Path(a.out_json).parent.mkdir(parents=True, exist_ok=True)
-    Path(a.out_json).write_text(json.dumps(rows, indent=1), encoding="utf-8")
+    Path(out_json).parent.mkdir(parents=True, exist_ok=True)
+    Path(out_json).write_text(json.dumps(rows, indent=1), encoding="utf-8")
 
     lines = ["| Level | Visibility | Method | Recall | Precision | Radius bias (px) "
              "| IDs pred / true | ID switches | Merges ok / checked |",
@@ -44,8 +47,9 @@ def main() -> None:
                      f"| {r['pred_ids']} / {r['true_ids']} | {r['id_switches']} "
                      f"| {r['merges_ok']} / {r['merges_checked']} |")
     md = "\n".join(lines)
-    Path(a.out_md).write_text(md + "\n", encoding="utf-8")
+    Path(out_md).write_text(md + "\n", encoding="utf-8")
     print(md)
+    return rows
 
 
 if __name__ == "__main__":

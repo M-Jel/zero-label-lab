@@ -3,11 +3,12 @@
 Legend: `[x]` done, `[ ]` to do, `⛔` needs the owner's explicit OK (paid Meta API call or action only the owner can take).
 
 ## Phase 0 — environment and hygiene
-- [ ] 0.1 Convert `requirements.txt` from UTF-16 to UTF-8, remove the duplicate `imageio-ffmpeg` line, pin it
-- [ ] 0.2 Translate French docstrings, comments and CLI messages in `zerolabel/` to English (behaviour unchanged)
-- [ ] 0.3 Check that torch / transformers / peft / trl / scikit-learn install under Python 3.15 (dry-run resolves; real install in Phase 4), document the result
-- [ ] 0.4 `pytest` tests (no API call): `sam_parse`, `evaluate.match/score`, `report_agent.check`, `measure`
-- [ ] 0.5 Single reproducible entry point `python -m zerolabel.reproduce` that rebuilds every result from cached files (never calls the API)
+- [x] 0.1 Convert `requirements.txt` from UTF-16 to UTF-8, remove the duplicate `imageio-ffmpeg` line, pin it
+- [x] 0.2 Translate French docstrings, comments and CLI messages in `zerolabel/` to English (behaviour unchanged)
+- [x] 0.3 Check that torch / transformers / peft / trl / scikit-learn install under Python 3.15 (dry-run resolves; real install in Phase 4), document the result
+  - Result: dry-run resolves, but the real install fails under 3.15 (PyYAML builds from source, needs MSVC). `.venv-train` uses Python 3.12.10 with torch 2.15.0+cpu, transformers 5.22.2, peft 0.21.2, trl 1.17.1 (`requirements-train.txt`).
+- [x] 0.4 `pytest` tests (no API call): `sam_parse`, `evaluate.match/score`, `report_agent.check`, `measure`
+- [x] 0.5 Single reproducible entry point `python -m zerolabel.reproduce` that rebuilds every result from cached files (never calls the API)
 - [ ] 0.6 Push phase 0
 
 ## Phase 1 — report agent
